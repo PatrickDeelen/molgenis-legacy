@@ -6,6 +6,7 @@ import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -52,7 +53,7 @@ import org.molgenis.util.Tuple;
  */
 public class JDBCModelExtractor
 {
-	public static transient final Logger logger = Logger.getLogger("JDBCModelExtractor");
+	private static final Logger logger = Logger.getLogger("JDBCModelExtractor");
 
 	public static void main(String[] args) throws Exception
 	{
@@ -517,15 +518,21 @@ public class JDBCModelExtractor
 			logger.info(toString(m));
 			return m;
 		}
-		catch (Exception e)
+		catch (SQLException e)
 		{
 			logger.error(e);
 			e.printStackTrace();
 			return null;
 		}
+		catch (JAXBException e1)
+		{
+			logger.error(e1);
+			e1.printStackTrace();
+			return null;
+		}
 	}
 
-	private static String toString(Model model) throws JAXBException
+	public static String toString(Model model) throws JAXBException
 	{
 		// save to xml (FIXME: now print only)
 		ByteArrayOutputStream out = new ByteArrayOutputStream();

@@ -1,6 +1,7 @@
 package org.molgenis.generators;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -29,7 +30,7 @@ import org.molgenis.util.Tuple;
 
 public class GeneratorHelper
 {
-	private static final transient Logger logger = Logger.getLogger(GeneratorHelper.class.getSimpleName());
+	private static final Logger logger = Logger.getLogger(GeneratorHelper.class.getSimpleName());
 	MolgenisOptions options;
 	MolgenisFieldTypes typeRegistry;
 
@@ -101,7 +102,7 @@ public class GeneratorHelper
 		if (field == null) return "NULLPOINTER";
 		try
 		{
-			return typeRegistry.get(field).getJavaPropertyType();
+			return MolgenisFieldTypes.get(field).getJavaPropertyType();
 		}
 		catch (Exception e)
 		{
@@ -158,7 +159,7 @@ public class GeneratorHelper
 	 */
 	public String getSetType(Model model, Field field) throws Exception
 	{
-		return typeRegistry.get(field).getJavaSetterType();
+		return MolgenisFieldTypes.get(field).getJavaSetterType();
 	}
 
 	/**
@@ -176,12 +177,12 @@ public class GeneratorHelper
 	 */
 	public String getDefault(Model model, Field field) throws Exception
 	{
-		return typeRegistry.get(field).getJavaPropertyDefault();
+		return MolgenisFieldTypes.get(field).getJavaPropertyDefault();
 	}
 
 	public String getJavaAssignment(Field field, String value) throws MolgenisModelException
 	{
-		return typeRegistry.get(field).getJavaAssignment(value);
+		return MolgenisFieldTypes.get(field).getJavaAssignment(value);
 	}
 
 	/**
@@ -822,12 +823,10 @@ public class GeneratorHelper
 					}
 
 				}
-				catch (Exception e)
+				catch (IOException e)
 				{
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+					logger.warn(e);
 				}
-
 			}
 		}
 

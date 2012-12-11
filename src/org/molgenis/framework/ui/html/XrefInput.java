@@ -6,7 +6,7 @@
  * <li>2006-03-07, 1.0.0, DI Matthijssen
  * <li>2006-05-14; 1.1.0; MA Swertz integration into Inveninge (and major
  * rewrite)
- * <li>2006-05-14; 1.2ƒ.0; RA Scheltema major rewrite + cleanup
+ * <li>2006-05-14; 1.2.0; RA Scheltema major rewrite + cleanup
  * </ul>
  */
 
@@ -26,6 +26,7 @@ import org.molgenis.util.Tuple;
  * for the values. Use xrefLabels to select which field(s) should be shown as
  * labels to the user (optional).
  */
+@edu.umd.cs.findbugs.annotations.SuppressWarnings(value = "VA_FORMAT_STRING_USES_NEWLINE", justification = "Always use \n for newlines")
 public class XrefInput<E extends Entity> extends AbstractRefInput<E>
 {
 	protected XrefInput()
@@ -78,9 +79,10 @@ public class XrefInput<E extends Entity> extends AbstractRefInput<E>
 	@Override
 	public String toHtml(Tuple params) throws ParseException, HtmlInputException
 	{
-		return new XrefInput(params).render();
+		return new XrefInput<E>(params).render();
 	}
 
+	@Override
 	public void set(Tuple t) throws HtmlInputException
 	{
 		super.set(t);

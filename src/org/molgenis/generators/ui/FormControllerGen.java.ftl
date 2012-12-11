@@ -42,7 +42,7 @@ ${imports(model, model.getEntity(entity), "ui", "Form")}
 <#if parent_form?exists>
 //imports parent forms
 <#assign xrefentity = parent_form.getRecord()>
-import ${xrefentity.getNamespace()}.${Name(xrefentity)};
+import ${xrefentity.getNamespace()}.${JavaName(xrefentity)};
 </#if>
 
 /**
@@ -178,7 +178,20 @@ public class ${JavaName(form.className)}FormController extends FormController<${
 </#list>	
 		return fieldName;
 	}	
-	
+
+	@Override	
+	public String getField(String searchFieldName)
+	{
+<#list form.getRecord().getAllFields() as field>
+	<#if field.type="xref" || field.type="mref">
+		<#list field.xrefLabelNames?reverse as label>
+		if(searchFieldName.equals("${field.name}_${label}")) return "${field.name}";
+		</#list>
+	</#if>
+</#list>	
+		return searchFieldName;
+	}
+		
 	@Override
 	public void resetCompactView()
 	{

@@ -24,7 +24,7 @@ import freemarker.template.Template;
 
 public class HSqlCreateSubclassPerTableGen extends Generator
 {
-	public static final transient Logger logger = Logger.getLogger(HSqlCreateSubclassPerTableGen.class);
+	private static final Logger logger = Logger.getLogger(HSqlCreateSubclassPerTableGen.class);
 
 	@Override
 	public void generate(Model model, MolgenisOptions options) throws Exception
@@ -77,7 +77,7 @@ public class HSqlCreateSubclassPerTableGen extends Generator
 		}
 		catch (Exception e)
 		{
-			logger.debug("Something wrong with Code:" + out.toString() + " \n Error:" + e.getMessage());
+			logger.debug("Something wrong with Code:" + out.toString("UTF-8") + " \n Error:" + e.getMessage());
 			e.printStackTrace();
 			System.exit(-1);
 		}

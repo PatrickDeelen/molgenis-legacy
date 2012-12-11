@@ -36,6 +36,7 @@ public class Form extends UISchema
 	/**
 	 * 
 	 */
+	@Override
 	public Type getType()
 	{
 		return Type.FORM;
@@ -393,6 +394,7 @@ public class Form extends UISchema
 		this.compactView = compactFields;
 	}
 
+	@Override
 	public String toString()
 	{
 		StringBuilder commandsBuilder = new StringBuilder();
@@ -400,8 +402,8 @@ public class Form extends UISchema
 			commandsBuilder.append(command).append(',');
 		String sortby = "";
 		if (this.sortby != null) sortby = "sortby=" + this.sortby;
-		return String.format("Form(name=%s, entity=%s, group=%s, commands=%s,%s)", getName(), getRecord().getName(),
-				getGroup(), commandsBuilder.toString(), sortby);
+		return String.format("Form(name=%s, entity=%s, group=%s, groupRead=%s, commands=%s,%s)", getName(), getRecord()
+				.getName(), getGroup(), getGroupRead(), commandsBuilder.toString(), sortby);
 	}
 
 	public String getSortby()

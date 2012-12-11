@@ -86,7 +86,7 @@ public class VcfRecord
 
 	public List<String> getFormat()
 	{
-		return Arrays.asList(record.getString("FORMAT"));
+		return Arrays.asList(record.getString("FORMAT").split(":"));
 	}
 
 	public List<String> getSamples()
@@ -112,6 +112,7 @@ public class VcfRecord
 	}
 
 	// just for testing
+	@Override
 	public String toString()
 	{
 		StringBuilder infoBuilder = new StringBuilder().append('[');

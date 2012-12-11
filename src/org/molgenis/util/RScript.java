@@ -8,6 +8,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.charset.Charset;
 
 import org.apache.log4j.Logger;
 
@@ -25,11 +26,10 @@ import org.apache.log4j.Logger;
 public class RScript
 {
 	/** command to run R */
-	// don't make final; this is assigned at runtime
-	public static String R_COMMAND = "R CMD BATCH --vanilla --slave";
+	public String R_COMMAND = "R CMD BATCH --vanilla --slave";
 
 	/** logger */
-	private static final transient Logger logger = Logger.getLogger(RScript.class.getSimpleName());
+	private Logger logger = Logger.getLogger(RScript.class.getSimpleName());
 
 	/** buffer containing the script */
 	private StringBuffer script = new StringBuffer();
@@ -56,6 +56,16 @@ public class RScript
 	public String getResult()
 	{
 		return result;
+	}
+
+	public String getR_COMMAND()
+	{
+		return R_COMMAND;
+	}
+
+	public void setR_COMMAND(String r_COMMAND)
+	{
+		R_COMMAND = r_COMMAND;
 	}
 
 	/** Construct an R script object */
@@ -224,6 +234,7 @@ public class RScript
 	/**
 	 * Show the contents of the R script that has been created
 	 */
+	@Override
 	public String toString()
 	{
 		return this.script.toString();
@@ -233,7 +244,8 @@ public class RScript
 	private String streamToString(InputStream inputStream) throws IOException
 	{
 		StringBuffer fileContents = new StringBuffer();
-		BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+		BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, Charset.forName("UTF-8")));
+
 		String line;
 		while ((line = reader.readLine()) != null)
 		{

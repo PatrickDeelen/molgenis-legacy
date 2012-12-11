@@ -22,6 +22,7 @@ import org.molgenis.util.Tuple;
  * the database. Selectable data items will be shown as selection box and are
  * loaded dynamically via an 'ajax' service.
  */
+@edu.umd.cs.findbugs.annotations.SuppressWarnings(value = "VA_FORMAT_STRING_USES_NEWLINE", justification = "Always use \n for newlines")
 public class MrefInput<E extends Entity> extends AbstractRefInput<List<E>>
 {
 	/** Minimal constructor */
@@ -121,7 +122,7 @@ public class MrefInput<E extends Entity> extends AbstractRefInput<List<E>>
 	@Override
 	public String toHtml(Tuple params) throws HtmlInputException
 	{
-		return new MrefInput(params).render();
+		return new MrefInput<E>(params).render();
 	}
 
 	@Override

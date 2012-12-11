@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Vector;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 import org.molgenis.MolgenisOptions;
 import org.molgenis.fieldtypes.EnumField;
@@ -54,7 +55,7 @@ public class MolgenisModelValidator
 		// if(!options.mapper_implementation.equals(MolgenisOptions.MapperImplementation.JPA))
 		// {
 		moveMrefsFromInterfaceAndCopyToSubclass(model);
-		createLinkTablesForMrefs(model);
+		createLinkTablesForMrefs(model, options);
 		// }
 		copyDefaultXrefLabels(model);
 		copyDecoratorsToSubclass(model);
@@ -66,7 +67,7 @@ public class MolgenisModelValidator
 
 		copyFieldsToSubclassToEnforceConstraints(model);
 
-		validateNameSize(model);
+		validateNameSize(model, options);
 
 	}
 
@@ -123,18 +124,18 @@ public class MolgenisModelValidator
 
 	}
 
-	public static void validateNameSize(Model model) throws MolgenisModelException
+	public static void validateNameSize(Model model, MolgenisOptions options) throws MolgenisModelException
 	{
 		for (Entity e : model.getEntities())
 		{
 			// maximum num of chars in oracle table name of column is 30
-			if (e.getName().length() > 30)
+			if (options.db_driver.toLowerCase().contains("oracle") && e.getName().length() > 30)
 			{
 				throw new MolgenisModelException(String.format("table name %s is longer than %d", e.getName(), 30));
 			}
 			for (Field f : e.getFields())
 			{
-				if (f.getName().length() > 30)
+				if (options.db_driver.toLowerCase().contains("oracle") && f.getName().length() > 30)
 				{
 					throw new MolgenisModelException(String.format("field name %s is longer than %d", f.getName(), 30));
 				}
@@ -278,7 +279,8 @@ public class MolgenisModelValidator
 					Field type_field = new Field(e, new EnumField(), Field.TYPE_FIELD, Field.TYPE_FIELD, true, false,
 							true, null);
 					type_field.setDescription("Subtypes have to be set to allow searching");
-					type_field.setSystem(true);
+					// FIXME should be true, but breaks existing apps
+					// type_field.setSystem(true);
 					type_field.setHidden(true);
 					e.addField(0, type_field);
 				}
@@ -304,7 +306,7 @@ public class MolgenisModelValidator
 	 * @param model
 	 * @throws MolgenisModelException
 	 */
-	public static void createLinkTablesForMrefs(Model model) throws MolgenisModelException
+	public static void createLinkTablesForMrefs(Model model, MolgenisOptions options) throws MolgenisModelException
 	{
 		logger.debug("add linktable entities for mrefs...");
 		// find the multi-ref fields
@@ -327,7 +329,7 @@ public class MolgenisModelValidator
 					String mref_name = xref_field_from.getMrefName(); // explicit
 
 					// if mref_name longer than 30 throw error
-					if (mref_name.length() > 30)
+					if (options.db_driver.toLowerCase().contains("oracle") && mref_name.length() > 30)
 					{
 						throw new MolgenisModelException("mref_name cannot be longer then 30 characters, found: "
 								+ mref_name);
@@ -525,6 +527,12 @@ public class MolgenisModelValidator
 
 					List<String> xref_label_names = field.getXrefLabelNames();
 
+					// if no secondary key, use primary key
+					if (xref_label_names.size() == 0)
+					{
+						xref_label_names.add(field.getXrefFieldName());
+					}
+
 					Entity xref_entity = model.getEntity(xref_entity_name);
 					if (xref_entity == null) throw new MolgenisModelException("xref entity '" + xref_entity_name
 							+ "' does not exist for field " + entityname + "." + fieldname);
@@ -625,11 +633,7 @@ public class MolgenisModelValidator
 							if (!xref_label_name.equals(xref_field_name)
 									&& !field.allPossibleXrefLabels().keySet().contains(xref_label_name))
 							{
-								String validLabels = "";
-								for (String label : field.allPossibleXrefLabels().keySet())
-								{
-									validLabels += label + ", ";
-								}
+								String validLabels = StringUtils.join(field.allPossibleXrefLabels().keySet(), ',');
 								throw new MolgenisModelException("xref label '" + xref_label_name + "' for "
 										+ entityname + "." + fieldname
 										+ " is not part a secondary key. Valid labels are " + validLabels
@@ -716,30 +720,6 @@ public class MolgenisModelValidator
 					"there should be only one auto column and it must be the primary key for entity '" + entityname
 							+ "'");
 
-			// should have secondary key if there is a reference to this entity
-			if (!entity.isAbstract() && autocount >= 1)
-			{
-				if (entity.getAllKeys().size() < 2)
-				{
-					// check references
-					boolean ref = false;
-					for (Entity otherEntity : model.getEntities())
-					{
-						for (Field f : otherEntity.getAllFields())
-						{
-							if ((f.getType() instanceof XrefField || f.getType() instanceof MrefField)
-									&& entity.getName().equals(f.getXrefEntityName()))
-							{
-								throw new MolgenisModelException(
-										"if primary key is autoid, there should be secondary key for entity '"
-												+ entityname + "' because of reference by " + otherEntity.getName()
-												+ "." + f.getName());
-							}
-						}
-					}
-				}
-			}
-
 			// to strict, the unique field may be non-automatic
 			if (!entity.isAbstract() && autocount < 1)
 			{
@@ -794,8 +774,6 @@ public class MolgenisModelValidator
 							field.setAuto(pkeyField.isAuto());
 							field.setNillable(pkeyField.isNillable());
 							field.setReadonly(pkeyField.isReadOnly());
-
-							field.setSystem(true);
 							field.setXRefVariables(iface.getName(), pkeyField.getName(), null);
 							field.setHidden(true);
 
@@ -1200,7 +1178,6 @@ public class MolgenisModelValidator
 							Field copy = new Field(f);
 							copy.setEntity(e);
 							copy.setAuto(f.isAuto());
-							copy.setSystem(true);
 							e.addField(copy);
 
 							logger.warn(aKey.toString() + " cannot be enforced on " + e.getName() + ", copying "

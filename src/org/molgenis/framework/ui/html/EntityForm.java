@@ -33,13 +33,11 @@ public abstract class EntityForm<E extends Entity> extends HtmlForm
 		}
 		catch (InstantiationException e)
 		{
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			throw new RuntimeException(e);
 		}
 		catch (IllegalAccessException e)
 		{
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			throw new RuntimeException(e);
 		}
 	}
 
@@ -59,6 +57,7 @@ public abstract class EntityForm<E extends Entity> extends HtmlForm
 		this.entity = entity;
 	}
 
+	@Override
 	public void setInputs(List<HtmlInput<?>> inputs)
 	{
 		throw new UnsupportedOperationException("In EntityForm the inputs cannot be changed");

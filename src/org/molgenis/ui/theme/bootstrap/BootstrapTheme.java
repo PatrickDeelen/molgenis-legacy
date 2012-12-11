@@ -1,15 +1,15 @@
 package org.molgenis.ui.theme.bootstrap;
 
+import org.apache.log4j.Logger;
+import org.molgenis.framework.ui.ApplicationController;
 import org.molgenis.framework.ui.ScreenView;
 import org.molgenis.framework.ui.html.HtmlInputException;
 import org.molgenis.ui.Button;
 import org.molgenis.ui.Form;
-import org.molgenis.ui.Label;
 import org.molgenis.ui.MolgenisComponent;
 import org.molgenis.ui.StringInput;
 import org.molgenis.ui.theme.RenderException;
 import org.molgenis.ui.theme.base.BaseTheme;
-import org.molgenis.ui.theme.base.LabelView;
 
 /**
  * Theme that renders the ui using bootstrap. If no suitable renderer is
@@ -19,6 +19,8 @@ import org.molgenis.ui.theme.base.LabelView;
  */
 public class BootstrapTheme extends BaseTheme implements ScreenView
 {
+	private static final Logger logger = Logger.getLogger(ApplicationController.class);
+
 	private MolgenisComponent component;
 
 	public BootstrapTheme(MolgenisComponent c)
@@ -45,8 +47,7 @@ public class BootstrapTheme extends BaseTheme implements ScreenView
 		}
 		catch (RenderException e)
 		{
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			logger.warn(e);
 			return e.getMessage();
 		}
 	}
@@ -54,8 +55,8 @@ public class BootstrapTheme extends BaseTheme implements ScreenView
 	@Override
 	public String getCustomHtmlHeaders()
 	{
-		return "<link href=\"bootstrap/css/bootstrap.min.css\" rel=\"stylesheet\">" +
-				"<link href=\"bootstrap/css/bootstrap-responsive.css\" rel=\"stylesheet\">" +
-				"<script type=\"text/javascript\" src=\"bootstrap/js/bootstrap.min.js\"></script>";
+		return "<link href=\"bootstrap/css/bootstrap.min.css\" rel=\"stylesheet\">"
+				+ "<link href=\"bootstrap/css/bootstrap-responsive.css\" rel=\"stylesheet\">"
+				+ "<script type=\"text/javascript\" src=\"bootstrap/js/bootstrap.min.js\"></script>";
 	}
 }
