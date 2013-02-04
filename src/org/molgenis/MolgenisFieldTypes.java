@@ -18,8 +18,6 @@ import org.molgenis.fieldtypes.ImageField;
 import org.molgenis.fieldtypes.IntField;
 import org.molgenis.fieldtypes.LongField;
 import org.molgenis.fieldtypes.MrefField;
-import org.molgenis.fieldtypes.NSequenceField;
-import org.molgenis.fieldtypes.OnoffField;
 import org.molgenis.fieldtypes.RichtextField;
 import org.molgenis.fieldtypes.StringField;
 import org.molgenis.fieldtypes.TextField;
@@ -44,7 +42,7 @@ public class MolgenisFieldTypes
 
 	public enum FieldTypeEnum
 	{
-		BOOL, CHAR, DATE, DATE_TIME, DECIMAL, ENUM, EMAIL, FILE, FREEMARKER, HEXA, HYPERLINK, IMAGE, INT, LIST, LONG, MREF, NSEQUENCE, ON_OFF, STRING, TEXT, LONGTEXT, XREF, CATEGORICAL, UNKNOWN, RICHTEXT
+		BOOL, CHAR, DATE, DATE_TIME, DECIMAL, ENUM, EMAIL, FILE, FREEMARKER, HEXA, HYPERLINK, IMAGE, INT, LIST, LONG, MREF, STRING, TEXT, LONGTEXT, XREF, CATEGORICAL, UNKNOWN, RICHTEXT
 	}
 
 	/** Initialize default field types */
@@ -59,18 +57,15 @@ public class MolgenisFieldTypes
 			addType(new EnumField());
 			addType(new EmailField());
 			addType(new FileField());
-			addType(new ImageField());
 			addType(new HyperlinkField());
+			addType(new ImageField());
 			addType(new LongField());
 			addType(new MrefField());
-			addType(new NSequenceField());
-			addType(new OnoffField());
 			addType(new StringField());
 			addType(new TextField());
 			addType(new XrefField());
 			addType(new IntField());
 			addType(new RichtextField());
-			// addType(new LongTextField());
 			addType(new FreemarkerField());
 
 			init = true;
@@ -92,11 +87,24 @@ public class MolgenisFieldTypes
 	public static FieldType getType(String name)
 	{
 		init();
-		try
+
+		FieldType fieldType = types.get(name + "field");
+		if (fieldType != null)
 		{
-			return types.get(name + "field").getClass().newInstance();
+			try
+			{
+				return fieldType.getClass().newInstance();
+			}
+			catch (InstantiationException e)
+			{
+				throw new RuntimeException(e);
+			}
+			catch (IllegalAccessException e)
+			{
+				throw new RuntimeException(e);
+			}
 		}
-		catch (final Exception e)
+		else
 		{
 			logger.warn("couldn't get type for name '" + name + "'");
 			return new UnknownField();
@@ -112,9 +120,14 @@ public class MolgenisFieldTypes
 			ft.setField(f);
 			return ft;
 		}
-		catch (final Exception e)
+		catch (InstantiationException e)
 		{
-			e.printStackTrace();
+			logger.error(e);
+			throw new MolgenisModelException(e.getMessage());
+		}
+		catch (IllegalAccessException e)
+		{
+			logger.error(e);
 			throw new MolgenisModelException(e.getMessage());
 		}
 	}

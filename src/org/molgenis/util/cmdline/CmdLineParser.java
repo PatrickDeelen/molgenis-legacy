@@ -589,7 +589,7 @@ public class CmdLineParser
 				try
 				{
 					String value = fields[i].get(options).toString();
-					if (opt.param().equals("password")) value = "xxxxxx";
+					if (opt.param() == Param.PASSWORD) value = "xxxxxx";
 					value_padding = Math.max(value_padding, value.length());
 				}
 				catch (IllegalAccessException e)
@@ -621,10 +621,8 @@ public class CmdLineParser
 					// print
 					result.append(opt.name() + n_spacesBuilder.toString() + " = " + value + v_spacesBuilder.toString()
 							+ " #" + opt.usage() + "\n");
-					// TODO? ( opt.type().equals(Option.Type.OPTIONAL_ARGUMENT)
-					// ? "(optional) ":"" )
 				}
-				catch (Exception e)
+				catch (IllegalAccessException e)
 				{
 					throw new CmdLineException("faulty option field " + fields[i]);
 				}

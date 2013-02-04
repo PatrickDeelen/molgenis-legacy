@@ -19,13 +19,15 @@ import org.molgenis.framework.db.QueryRule.Operator;
 import org.molgenis.framework.db.jdbc.JDBCQueryGernatorUtil;
 import org.molgenis.framework.security.Login;
 import org.molgenis.framework.security.SimpleLogin;
+import org.molgenis.io.TupleReader;
+import org.molgenis.io.TupleWriter;
 import org.molgenis.model.elements.Field;
 import org.molgenis.model.elements.Model;
 import org.molgenis.util.Entity;
-import org.molgenis.util.SimpleTuple;
-import org.molgenis.util.Tuple;
-import org.molgenis.util.TupleReader;
-import org.molgenis.util.TupleWriter;
+import org.molgenis.util.tuple.CaseInsensitiveKeyValueTuple;
+import org.molgenis.util.tuple.EntityTuple;
+import org.molgenis.util.tuple.Tuple;
+import org.molgenis.util.tuple.WritableTuple;
 
 public abstract class AbstractDatabase implements Database
 {
@@ -88,12 +90,11 @@ public abstract class AbstractDatabase implements Database
 	{
 		try
 		{
-			writer.setHeaders(fieldsToExport);
-			writer.writeHeader();
+			writer.writeColNames(fieldsToExport);
 			int count = 0;
 			for (Entity e : find(entityClass, rules))
 			{
-				writer.writeRow(e);
+				writer.write(new EntityTuple(e));
 
 				count++;
 			}
@@ -469,7 +470,10 @@ public abstract class AbstractDatabase implements Database
 				}
 				for (String labelField : entityInDb.getLabelFields())
 				{
-					if (!entityInDb.get(labelField).equals(newEntity.get(labelField)))
+					Object x1 = entityInDb.get(labelField);
+					Object x2 = newEntity.get(labelField);
+
+					if (!x1.equals(x2))
 					{
 						match = false;
 						break;
@@ -477,23 +481,9 @@ public abstract class AbstractDatabase implements Database
 				}
 				if (match)
 				{
-					Tuple newValues = new SimpleTuple();
-					for (String field : newEntity.getFields())
-					{
-						// as they are new entities, should include 'id'
-						if (!(newEntity.get(field) == null))
-						{
-							// if(logger.isDebugEnabled())
-							// logger.debug("entity name = " +
-							// newEntity.get("name") + " has null field: " +
-							// field);
-							newValues.set(field, newEntity.get(field));
-
-						}
-					}
 					try
 					{
-						entityInDb.set(newValues, false);
+						entityInDb.set(new EntityTuple(newEntity), false);
 					}
 					catch (Exception ex)
 					{
@@ -502,7 +492,6 @@ public abstract class AbstractDatabase implements Database
 				}
 			}
 		}
-		// return entities;
 	}
 
 	@Override
@@ -759,13 +748,12 @@ public abstract class AbstractDatabase implements Database
 			{
 				while (rs.next())
 				{
-					SimpleTuple t = new SimpleTuple();
+					WritableTuple tuple = new CaseInsensitiveKeyValueTuple();
 					for (int i = 1; i <= colcount; i++)
 					{
-						t.set(rs.getMetaData().getColumnLabel(i), rs.getObject(i));
+						tuple.set(rs.getMetaData().getColumnLabel(i), rs.getObject(i));
 					}
-					t.setFieldTypes(fieldTypes);
-					tuples.add(t);
+					tuples.add(tuple);
 				}
 			}
 			rs.close();

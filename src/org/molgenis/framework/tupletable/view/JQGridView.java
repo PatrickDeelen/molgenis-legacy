@@ -5,6 +5,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.charset.Charset;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -14,8 +15,10 @@ import java.util.Map;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.molgenis.framework.db.Database;
+import org.molgenis.framework.db.DatabaseException;
 import org.molgenis.framework.db.QueryRule;
 import org.molgenis.framework.db.QueryRule.Operator;
 import org.molgenis.framework.server.MolgenisRequest;
@@ -37,7 +40,7 @@ import org.molgenis.framework.ui.FreemarkerView;
 import org.molgenis.framework.ui.ScreenController;
 import org.molgenis.framework.ui.html.HtmlWidget;
 import org.molgenis.util.HandleRequestDelegationException;
-import org.molgenis.util.Tuple;
+import org.molgenis.util.tuple.Tuple;
 
 import com.google.gson.Gson;
 
@@ -93,7 +96,7 @@ public class JQGridView extends HtmlWidget
 			@Override
 			public String getUrl()
 			{
-				return "molgenis.do?__target=" + hostController.getName() + "&__action=download_json_" + name;
+				return "molgenis.do?__target=" + hostController.getName() + "&__action=download_json_dataset";
 			}
 
 			@Override
@@ -136,7 +139,8 @@ public class JQGridView extends HtmlWidget
 	 * @param out
 	 *            The {@link OutputStream} to render to.
 	 */
-	public void handleRequest(Database db, Tuple request, OutputStream out) throws HandleRequestDelegationException
+	public void handleRequest(Database db, MolgenisRequest request, OutputStream out)
+			throws HandleRequestDelegationException
 	{
 		try
 		{
@@ -161,19 +165,19 @@ public class JQGridView extends HtmlWidget
 				case LOAD_CONFIG:
 					if (callback != null)
 					{
-						callback.beforeLoadConfig((MolgenisRequest) request, tupleTable);
+						callback.beforeLoadConfig(request, tupleTable);
 					}
-					loadTupleTableConfig(db, (MolgenisRequest) request, tupleTable);
+					loadTupleTableConfig(db, request, tupleTable);
 					break;
 				case HIDE_COLUMN:
 					String columnToRemove = request.getString("column");
 					tupleTable.hideColumn(columnToRemove);
-					loadTupleTableConfig(db, (MolgenisRequest) request, tupleTable);
+					loadTupleTableConfig(db, request, tupleTable);
 					break;
 				case SHOW_COLUMN:
 					String columnToShow = request.getString("column");
 					tupleTable.showColumn(columnToShow);
-					loadTupleTableConfig(db, (MolgenisRequest) request, tupleTable);
+					loadTupleTableConfig(db, request, tupleTable);
 					break;
 				case SET_COLUMN_PAGE:
 
@@ -201,15 +205,15 @@ public class JQGridView extends HtmlWidget
 					colOffset = Math.max(colOffset, 0);
 
 					tupleTable.setColOffset(colOffset);
-					loadTupleTableConfig(db, (MolgenisRequest) request, tupleTable);
+					loadTupleTableConfig(db, request, tupleTable);
 					break;
 				case NEXT_COLUMNS:
 					tupleTable.setColOffset(tupleTable.getColOffset() + maxVisibleColumnCount);
-					loadTupleTableConfig(db, (MolgenisRequest) request, tupleTable);
+					loadTupleTableConfig(db, request, tupleTable);
 					break;
 				case PREVIOUS_COLUMNS:
 					tupleTable.setColOffset(tupleTable.getColOffset() - maxVisibleColumnCount);
-					loadTupleTableConfig(db, (MolgenisRequest) request, tupleTable);
+					loadTupleTableConfig(db, request, tupleTable);
 					break;
 				case RENDER_DATA:
 					final List<QueryRule> rules = new ArrayList<QueryRule>();
@@ -259,7 +263,7 @@ public class JQGridView extends HtmlWidget
 						((FilterableTupleTable) tupleTable).setFilters(rules);
 					}
 
-					renderData(((MolgenisRequest) request), postData, totalPages, tupleTable);
+					renderData(request, postData, totalPages, tupleTable);
 					break;
 
 				case EDIT_RECORD:
@@ -280,22 +284,18 @@ public class JQGridView extends HtmlWidget
 						result.put("message", "Record updated");
 						result.put("success", true);
 					}
-					catch (Exception e)
+					catch (TableException e)
 					{
-						e.printStackTrace();
-
 						result.put("message", e.getMessage());
 						result.put("success", false);
 					}
-
 					// Send this json string back the html.
-					((MolgenisRequest) request).getResponse().getOutputStream().println(result.toString());
+					request.getResponse().getOutputStream().println(result.toString());
 					break;
 
 				case ADD_RECORD:
 
 					if (!(tupleTable instanceof EditableTupleTable))
-
 					{
 						throw new UnsupportedOperationException("TupleTable is not editable");
 					}
@@ -307,20 +307,17 @@ public class JQGridView extends HtmlWidget
 					try
 					{
 						((EditableTupleTable) tupleTable).add(request);
-
 						result.put("message", "Record added");
 						result.put("success", true);
 					}
-					catch (Exception e)
+					catch (TableException e)
 					{
-						e.printStackTrace();
-
 						result.put("message", e.getMessage());
 						result.put("success", false);
 					}
 
 					// Send this json string back the html.
-					((MolgenisRequest) request).getResponse().getOutputStream().println(result.toString());
+					request.getResponse().getOutputStream().println(result.toString());
 					break;
 
 				case DELETE_RECORD:
@@ -340,28 +337,39 @@ public class JQGridView extends HtmlWidget
 						result.put("message", "Record deleted");
 						result.put("success", true);
 					}
-					catch (Exception e)
+					catch (TableException e)
 					{
-						e.printStackTrace();
-
 						result.put("message", e.getMessage());
 						result.put("success", false);
 					}
 
 					// Send this json string back the html.
-					((MolgenisRequest) request).getResponse().getOutputStream().println(result.toString());
+					request.getResponse().getOutputStream().println(result.toString());
 					break;
 				default:
 					break;
 			}
-
 		}
-		catch (final Exception e)
+		catch (JSONException e)
 		{
-			e.printStackTrace();
 			throw new HandleRequestDelegationException(e);
 		}
-
+		catch (IOException e)
+		{
+			throw new HandleRequestDelegationException(e);
+		}
+		catch (TableException e)
+		{
+			throw new HandleRequestDelegationException(e);
+		}
+		catch (SQLException e)
+		{
+			throw new HandleRequestDelegationException(e);
+		}
+		catch (DatabaseException e)
+		{
+			throw new HandleRequestDelegationException(e);
+		}
 	}
 
 	/**
@@ -591,16 +599,14 @@ public class JQGridView extends HtmlWidget
 	{
 		final JQGridResult result = new JQGridResult(page, totalPages, rowCount);
 
-		Iterator<Tuple> it = table.iterator();
-		while (it.hasNext())
+		for (Iterator<Tuple> it = table.iterator(); it.hasNext();)
 		{
 			Tuple row = it.next();
 			final LinkedHashMap<String, String> rowMap = new LinkedHashMap<String, String>();
 
-			final List<String> fieldNames = row.getFieldNames();
-			for (final String fieldName : fieldNames)
+			for (String fieldName : row.getColNames())
 			{
-				final String rowValue = !row.isNull(fieldName) ? row.getString(fieldName) : "null";
+				String rowValue = !row.isNull(fieldName) ? row.getString(fieldName) : "null";
 				rowMap.put(fieldName, rowValue); // TODO encode to HTML
 			}
 			result.addRow(rowMap);

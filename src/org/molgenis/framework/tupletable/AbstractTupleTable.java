@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.molgenis.model.elements.Field;
-import org.molgenis.util.Tuple;
+import org.molgenis.util.tuple.Tuple;
 
 import com.google.common.base.Predicate;
 import com.google.common.collect.Collections2;
@@ -161,7 +161,7 @@ public abstract class AbstractTupleTable implements TupleTable
 			colCount--;
 		}
 
-		int colLimit = (int) (this.colLimit == 0 ? colCount - getColOffset() : getCurrentColumnPageSize(colCount));
+		int colLimit = this.colLimit == 0 ? colCount - getColOffset() : getCurrentColumnPageSize(colCount);
 
 		if (getColOffset() > 0)
 		{
